@@ -22,63 +22,61 @@ export default function LoginScreen({ navigation }) {
     const { width, height } = useWindowDimensions();
     const [userName, setUserName] = useState(null);
 
+    useEffect(() => {
+        const fetchUserName = async () => {
+            const storedUserName = await AsyncStorage.getItem(
+                sessionNames.user
+            );
+            if (storedUserName) {
+                setUserName(storedUserName);
+            }
+        };
+        fetchUserName();
+    }, []);
+
+    useEffect(() => {
+        if (userName) {
+            getUser();
+        }
+    }, [userName]);
+
     async function getUser() {
-        if (!userName) return;
         setLoading(true);
         const url = `${apiUrl}?method=user.getinfo&user=${userName}&api_key=${apiKey}&format=json`;
-        fetch(url)
-            .then((response) => {
-                // Verificar si la respuesta es exitosa (status 200)
-                if (!response.ok) {
-                    alert("La solicitud no pudo ser completada");
-                }
-                // Convertir la respuesta a JSON
-                return response.json();
-            })
-            .then((res) => {
-                // Manejar la respuesta exitosa
-                setUser(res.user);
-            })
-            .catch((error) => {
-                // Manejar el error
-                alert("Error realizando la consulta de usuario");
-            })
-            .finally(() => getLast());
+        console.log(url);
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error("La solicitud no pudo ser completada");
+            }
+            const data = await response.json();
+            setUser(data.user);
+            getLast();
+        } catch (error) {
+            alert("Error realizando la consulta de usuario");
+        } finally {
+            setLoading(false);
+        }
     }
 
     function getLast() {
-        if (!userName) return;
         setLoading(true);
         const url = `${apiUrl}?method=user.getrecenttracks&user=${userName}&api_key=${apiKey}&format=json&limit=10&page=1`;
-        console.log(url);
         fetch(url)
             .then((response) => {
-                // Verificar si la respuesta es exitosa (status 200)
                 if (!response.ok) {
-                    alert("La solicitud no pudo ser completada");
+                    throw new Error("La solicitud no pudo ser completada");
                 }
-                // Convertir la respuesta a JSON
                 return response.json();
             })
             .then((res) => {
-                // Manejar la respuesta exitosa
-                console.log(res.recenttracks);
                 setRecentsTraks(res.recenttracks);
             })
             .catch((error) => {
-                // Manejar el error
                 alert("Error realizando la consulta");
             })
             .finally(() => setLoading(false));
     }
-
-    useEffect(() => {
-        setUserName(AsyncStorage.getItem(sessionNames.user));
-    }, []);
-    
-    useEffect(() => {
-        getUser();
-    }, [userName]);
 
     const styles = StyleSheet.create({
         container: {
@@ -150,8 +148,8 @@ export default function LoginScreen({ navigation }) {
                                 Ultimas Diez Canciones
                             </List.Subheader>
                             <ScrollView>
-                                {recentsTracks.track.length > 0 ? (
-                                    recentsTracks.track?.map((v, k) => (
+                                {recentsTracks?.track.length > 0 ? (
+                                    recentsTracks?.track?.map((v, k) => (
                                         <List.Item
                                             key={k}
                                             title={v.name}
