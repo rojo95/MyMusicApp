@@ -10,12 +10,15 @@ import React, { useEffect, useState } from "react";
 import { Card, Text, Title, useTheme } from "react-native-paper";
 import Constants from "expo-constants";
 import Spinner from "../../components/Spinner/Index";
+import sessionNames from "../../utils/sessionInfo";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function HomeScreen({ navigation }) {
     const theme = useTheme();
 
     const [loading, setLoading] = useState(true);
     const [topSongs, setTopSongs] = useState([]);
+    const [country, setCountry] = useState(null);
     const { apiKey, apiUrl } = Constants.expoConfig.extra;
 
     const styles = StyleSheet.create({
@@ -67,9 +70,27 @@ export default function HomeScreen({ navigation }) {
         },
     });
 
+    async function getUser() {
+        const storedUserName = await AsyncStorage.getItem(sessionNames.user);
+        setLoading(true);
+        const url = `${apiUrl}?method=user.getinfo&user=${storedUserName}&api_key=${apiKey}&format=json`;
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error("La solicitud no pudo ser completada");
+            }
+            const data = await response.json();
+            setCountry(data.user.country);
+        } catch (error) {
+            alert("Error realizando la consulta de usuario");
+        } finally {
+            setLoading(false);
+        }
+    }
+
     function getTopSongs() {
         setLoading(true);
-        const url = `${apiUrl}?method=geo.gettoptracks&country=spain&api_key=${apiKey}&limit=10&page=1&format=json`;
+        const url = `${apiUrl}?method=geo.gettoptracks&country=${country.toLowerCase()}&api_key=${apiKey}&limit=10&page=1&format=json`;
         fetch(url)
             .then((response) => {
                 // Verificar si la respuesta es exitosa (status 200)
@@ -92,11 +113,14 @@ export default function HomeScreen({ navigation }) {
     }
 
     useEffect(() => {
-        StatusBar.setBackgroundColor(theme.colors.primary);
-        getTopSongs();
-
-        return () => StatusBar.setBackgroundColor("#fff");
+        getUser();
     }, []);
+
+    useEffect(() => {
+        if (country) {
+            getTopSongs();
+        }
+    }, [country]);
 
     return (
         <ScrollView style={{ flex: 1 }}>
@@ -106,7 +130,7 @@ export default function HomeScreen({ navigation }) {
                 ) : (
                     <View>
                         <View>
-                            <Title>Top canciones en tu pais</Title>
+                            <Title>Top canciones en {country}</Title>
                         </View>
 
                         <View>

@@ -43,7 +43,6 @@ export default function LoginScreen({ navigation }) {
     async function getUser() {
         setLoading(true);
         const url = `${apiUrl}?method=user.getinfo&user=${userName}&api_key=${apiKey}&format=json`;
-        console.log(url);
         try {
             const response = await fetch(url);
             if (!response.ok) {
