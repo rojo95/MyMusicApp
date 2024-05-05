@@ -17,6 +17,56 @@ export default function HomeScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [topSongs, setTopSongs] = useState([]);
     const { apiKey, apiUrl } = Constants.expoConfig.extra;
+
+    const styles = StyleSheet.create({
+        card: {
+            margin: 5,
+            borderRadius: 8,
+            overflow: "hidden",
+            width: "100%",
+            height: 150, // add a fixed height to the card
+        },
+        imageBackground: {
+            height: "100%",
+            justifyContent: "center",
+            alignItems: "center",
+        },
+        overlay: {
+            ...StyleSheet.absoluteFillObject,
+            backgroundColor: theme.colors.primaryLightRGBA,
+            alignItems: "left",
+            justifyContent: "center",
+            paddingHorizontal: 16,
+            paddingLeft: 110,
+            paddingVertical: 8,
+            borderRadius: 8,
+        },
+        title: {
+            color: theme.colors.darkColor,
+            fontSize: 20,
+        },
+        avatar: {
+            width: 80,
+            height: 80,
+            borderRadius: 5,
+            position: "absolute",
+        },
+        imageContainer: {
+            top: 16,
+            left: 16,
+            width: 80,
+            height: 80,
+            position: "absolute",
+            shadowColor: "#000",
+            shadowOpacity: 0.3,
+            shadowRadius: 3,
+            shadowOffset: { width: 0, height: 3 },
+            elevation: 5, // Android
+            backgroundColor: "white", // Add this line
+            borderRadius: 5,
+        },
+    });
+
     function getTopSongs() {
         setLoading(true);
         const url = `${apiUrl}?method=geo.gettoptracks&country=spain&api_key=${apiKey}&limit=10&page=1&format=json`;
@@ -49,24 +99,18 @@ export default function HomeScreen({ navigation }) {
     }, []);
 
     return (
-        <ScrollView
-            style={{
-                flex: 1,
-            }}
-        >
-            <View
-                style={{
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flex: 1,
-                }}
-            >
+        <ScrollView style={{ flex: 1 }}>
+            <View style={{ padding: 16 }}>
                 {loading ? (
                     <Spinner activate={loading} />
                 ) : (
-                    topSongs.map(
-                        (v, k) =>
-                            v.mbid && (
+                    <View>
+                        <View>
+                            <Title>Top canciones en tu pais</Title>
+                        </View>
+
+                        <View>
+                            {topSongs.map((v, k) => (
                                 <Card
                                     style={styles.card}
                                     key={k}
@@ -89,62 +133,27 @@ export default function HomeScreen({ navigation }) {
                                             <Title style={styles.title}>
                                                 {v.name}
                                             </Title>
+
                                             <Title style={styles.title}>
                                                 Artista: {v.artist.name}
                                             </Title>
-                                            <Title style={styles.title}>
-                                                Oyentes: {v.listeners}
-                                            </Title>
                                         </View>
                                     </ImageBackground>
-                                    <Image
-                                        source={{
-                                            uri: v.image[1]["#text"],
-                                        }}
-                                        style={styles.avatar}
-                                    />
+
+                                    <View style={styles.imageContainer}>
+                                        <Image
+                                            source={{
+                                                uri: v.image[1]["#text"],
+                                            }}
+                                            style={styles.avatar}
+                                        />
+                                    </View>
                                 </Card>
-                            )
-                    )
+                            ))}
+                        </View>
+                    </View>
                 )}
             </View>
         </ScrollView>
     );
 }
-
-const styles = StyleSheet.create({
-    card: {
-        margin: 5,
-        borderRadius: 8,
-        overflow: "hidden", // para que las esquinas redondeadas de la imagen de fondo funcionen correctamente
-        width: "100%",
-    },
-    imageBackground: {
-        // backgroundColor: "rgba(0, 0, 0, 0.5)",
-        height: 200,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    overlay: {
-        ...StyleSheet.absoluteFillObject, // para ocupar todo el espacio del ImageBackground
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        alignItems: "left",
-        justifyContent: "center",
-        paddingHorizontal: 16,
-        paddingLeft: 110,
-        paddingVertical: 8,
-        borderRadius: 8,
-    },
-    title: {
-        color: "white",
-        fontSize: 20,
-    },
-    avatar: {
-        width: 80,
-        height: 80,
-        borderRadius: 5, // la mitad del ancho y el alto
-        position: "absolute",
-        top: 16,
-        left: 16,
-    },
-});

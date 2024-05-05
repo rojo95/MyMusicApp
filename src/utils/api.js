@@ -46,30 +46,46 @@ function createUrl(params) {
 }
 
 async function getMobileSession({ username, password }) {
-    const url = createUrl({
-        method: "auth.getMobileSession",
-        api_key: apiKey,
-    });
+    const usr = username.trim();
+    const pass = password.trim();
 
     const formData = {
-        username,
-        password,
         api_key: apiKey,
-        api_sig: "",
+        method: "auth.getMobileSession",
+        username: usr,
+        password: pass,
+        api_sig: await generateApiSig({
+            api_key: apiKey,
+            method: "auth.getMobileSession",
+            username: usr,
+            password: pass,
+        }),
+        format: "json",
     };
-    formData.api_sig = await generateApiSig({
-        username,
-        password,
-        api_key: apiKey,
-    });
 
-    // console.log("formData", JSON.stringify(formData));
+    function encodeFormData(data) {
+        return Object.keys(data)
+            .map(
+                (key) =>
+                    encodeURIComponent(key) +
+                    "=" +
+                    encodeURIComponent(data[key])
+            )
+            .join("&");
+    }
 
-    const response = await fetch(url, {
+    const encodedData = encodeFormData(formData);
+
+    // console.log("encodedData", encodedData);
+
+    const response = await fetch(apiUrl, {
         method: "POST",
-        body: JSON.stringify(formData),
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: encodedData,
     })
-        .then((response) => response)
+        .then((response) => response.json())
         .then((data) => {
             return data;
         })

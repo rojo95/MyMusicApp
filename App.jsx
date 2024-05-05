@@ -18,11 +18,13 @@ import {
     IconButton,
     Text,
 } from "react-native-paper";
-import { Image, View } from "react-native";
+import { BackHandler, Image, View } from "react-native";
 import HomeScreen from "./src/views/Home/Index";
 import SongDetails from "./src/views/SongDetails/Index";
 import Profile from "./src/views/Profile/Index";
 import Login from "./src/views/Login/Index";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import sessionNames from "./src/utils/sessionInfo";
 
 const theme = {
     ...LightTheme,
@@ -33,8 +35,10 @@ const theme = {
         ...DefaultTheme.colors,
         primary: "#6b65c7",
         primaryLight: "#A19DDB",
+        primaryLightRGBA: "rgba(210, 208, 242, 0.18)",
         primaryContrast: "#fff",
-        loved: 'red'
+        darkColor: "#646471",
+        loved: "red",
     },
 };
 
@@ -46,7 +50,21 @@ const { LightTheme } = adaptNavigationTheme({
 function CustomDrawerContent(props) {
     const { navigation } = props;
     const handleLogout = () => {
-        // Aquí colocarías la lógica para cerrar sesión
+        function backAction() {
+            return true;
+        }
+        const backHandler = BackHandler.addEventListener(
+            "hardwareBackPress",
+            backAction
+        );
+
+        AsyncStorage.getAllKeys()
+            .then((keys) => {
+                keys.forEach(async (key) => {
+                    await AsyncStorage.removeItem(key);
+                });
+            })
+            .catch((error) => console.error(error));
         navigation.navigate("Login");
     };
 
@@ -86,18 +104,8 @@ const Routes = [
             drawerIcon: () => <IconButton icon="home" />,
             headerRight: () => (
                 <IconButton
-                    icon={({ color, size }) => (
-                        <Image
-                            source={{
-                                uri: "https://picsum.photos/700",
-                            }}
-                            style={{
-                                width: size,
-                                height: size,
-                                borderRadius: size / 2,
-                            }}
-                        />
-                    )}
+                    icon="account"
+                    iconColor={theme.colors.primaryContrast}
                     onPress={() => {
                         navigation.navigate("Profile");
                     }}
@@ -120,9 +128,10 @@ const Routes = [
             drawerItemStyle: {
                 display: "none",
             },
+            gestureEnabled: false,
             headerRight: () => (
                 <IconButton
-                    icon='arrow-left'
+                    icon="arrow-left"
                     onPress={() => {
                         navigation.goBack();
                     }}
@@ -161,7 +170,7 @@ const Routes = [
             drawerItemStyle: {
                 display: "none",
             },
-            // swipeEnabled: false,
+            swipeEnabled: false,
             headerShown: false,
             drawerIcon: () => <IconButton icon="account" />,
         }),
@@ -171,10 +180,19 @@ const Drawer = createDrawerNavigator();
 
 function MyDrawer() {
     const navigation = useNavigation();
+    const [userName, setUserName] = React.useState(null);
+
+    async function getUser() {
+        return await AsyncStorage.getItem(sessionNames.user);
+    }
+    useEffect(() => {
+        setUserName(getUser());
+    }, []);
+
     return (
         <Drawer.Navigator
             drawerIcon={() => <Button icon="menu" />}
-            initialRouteName="Login"
+            initialRouteName={!userName ? "Login" : "Home"}
             drawerContent={(props) => <CustomDrawerContent {...props} />}
         >
             {Routes.map((v, k) => (

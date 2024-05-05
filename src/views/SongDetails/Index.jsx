@@ -25,6 +25,7 @@ import {
     formatNumber,
     milisegundosToMinutesAndHours,
 } from "../../utils/calculos";
+import sessionNames from "../../utils/sessionInfo";
 
 function PlaylistScreen({ route }) {
     const theme = useTheme();
@@ -34,7 +35,7 @@ function PlaylistScreen({ route }) {
     const [expanded, setExpanded] = React.useState(false);
     const { apiKey, apiUrl } = Constants.expoConfig.extra;
     const [loved, setLoved] = useState(false);
-    const key = "fabs";
+    const fabs = sessionNames.fabs;
 
     const styles = StyleSheet.create({
         tags: {
@@ -96,7 +97,7 @@ function PlaylistScreen({ route }) {
                 mbid: id,
             };
 
-            const storedValue = await AsyncStorage.getItem(key);
+            const storedValue = await AsyncStorage.getItem(fabs);
             const parsedValue = JSON.parse(storedValue) || [];
 
             const exists = parsedValue.find((v) => v.mbid === id);
@@ -107,7 +108,7 @@ function PlaylistScreen({ route }) {
                 ? parsedValue.filter((v) => v.mbid !== id)
                 : [...parsedValue, songData];
 
-            await AsyncStorage.setItem(key, JSON.stringify(newValue));
+            await AsyncStorage.setItem(fabs, JSON.stringify(newValue));
             Alert.alert(
                 `Se ha ${!exists ? "agregado a" : "retirado de los"} favoritos.`
             );
@@ -118,7 +119,7 @@ function PlaylistScreen({ route }) {
 
     async function getSong() {
         setLoading(true);
-        const liked = JSON.parse(await AsyncStorage.getItem(key)).find(
+        const liked = JSON.parse(await AsyncStorage.getItem(fabs)).find(
             (v) => v.mbid === id
         );
         // console.log("liked", liked);

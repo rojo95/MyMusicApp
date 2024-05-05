@@ -1,9 +1,16 @@
-import { useState } from "react";
-import { StyleSheet, View, Image, useWindowDimensions } from "react-native";
+import { useEffect, useState } from "react";
+import {
+    StyleSheet,
+    View,
+    Image,
+    useWindowDimensions,
+    BackHandler,
+} from "react-native";
 import { Text, TextInput, Button, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Constants from "expo-constants";
 import getMobileSession from "../../utils/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import sessionNames from "../../utils/sessionInfo";
 
 export default function LoginScreen({ navigation }) {
     const theme = useTheme();
@@ -25,10 +32,30 @@ export default function LoginScreen({ navigation }) {
         if (!username || !password)
             return alert("Debe llenar los campos de manera correcta");
 
-        const sessionKey = await getMobileSession({ username, password });
-        console.log("sessionKey: ", JSON.stringify(sessionKey));
-        return;
+        const { session } = await getMobileSession({ username, password });
+        await AsyncStorage.setItem(sessionNames.user, session.name);
+        await AsyncStorage.setItem(sessionNames.key, session.key);
+
+        navigation.navigate("Home");
+        return setStates({
+            username: "",
+            password: "",
+            showPass: false,
+        });
     }
+
+    useEffect(() => {
+        function backAction() {
+            return true;
+        }
+
+        const backHandler = BackHandler.addEventListener(
+            "hardwareBackPress",
+            backAction
+        );
+
+        return () => backHandler.remove();
+    }, []);
 
     const styles = StyleSheet.create({
         container: {
@@ -41,6 +68,16 @@ export default function LoginScreen({ navigation }) {
             flex: 1,
             alignItems: "center",
             justifyContent: "center",
+            borderRadius: 100,
+        },
+        imgInternalCont: {
+            shadowColor: "#000",
+            shadowOpacity: 0.3,
+            shadowRadius: 3,
+            shadowOffset: { width: 0, height: 3 },
+            elevation: 5, // Android
+            backgroundColor: "white", // Add this line
+            borderRadius: 100, // Add this line
         },
         image: {
             borderRadius: 100,
@@ -65,15 +102,17 @@ export default function LoginScreen({ navigation }) {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.imageContainer}>
-                <Image
-                    source={require("../../../assets/images/logo.jpg")}
-                    style={styles.image}
-                />
+                <View style={styles.imgInternalCont}>
+                    <Image
+                        source={require("../../../assets/images/logo.jpg")}
+                        style={styles.image}
+                    />
+                </View>
             </View>
             <View style={styles.formContainer}>
                 <TextInput
                     mode="outlined"
-                    label="Correo Electrónico"
+                    label="Nombre de Usuario"
                     name="username"
                     value={states.username}
                     onChangeText={(text) =>

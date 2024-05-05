@@ -10,6 +10,8 @@ import { Text, useTheme, Title, List } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 import Spinner from "../../components/Spinner/Index";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import sessionNames from "../../utils/sessionInfo";
 
 export default function LoginScreen({ navigation }) {
     const theme = useTheme();
@@ -18,11 +20,12 @@ export default function LoginScreen({ navigation }) {
     const [recentsTracks, setRecentsTraks] = useState(null);
     const { apiKey, apiUrl } = Constants.expoConfig.extra;
     const { width, height } = useWindowDimensions();
-    const userSession = "rj";
+    const [userName, setUserName] = useState(null);
 
-    function getUser() {
+    async function getUser() {
+        if (!userName) return;
         setLoading(true);
-        const url = `${apiUrl}?method=user.getinfo&user=${userSession}&api_key=${apiKey}&format=json`;
+        const url = `${apiUrl}?method=user.getinfo&user=${userName}&api_key=${apiKey}&format=json`;
         fetch(url)
             .then((response) => {
                 // Verificar si la respuesta es exitosa (status 200)
@@ -44,8 +47,9 @@ export default function LoginScreen({ navigation }) {
     }
 
     function getLast() {
+        if (!userName) return;
         setLoading(true);
-        const url = `${apiUrl}?method=user.getrecenttracks&user=${userSession}&api_key=${apiKey}&format=json&limit=10&page=1`;
+        const url = `${apiUrl}?method=user.getrecenttracks&user=${userName}&api_key=${apiKey}&format=json&limit=10&page=1`;
         console.log(url);
         fetch(url)
             .then((response) => {
@@ -69,8 +73,12 @@ export default function LoginScreen({ navigation }) {
     }
 
     useEffect(() => {
-        getUser();
+        setUserName(AsyncStorage.getItem(sessionNames.user));
     }, []);
+    
+    useEffect(() => {
+        getUser();
+    }, [userName]);
 
     const styles = StyleSheet.create({
         container: {
@@ -83,6 +91,15 @@ export default function LoginScreen({ navigation }) {
             flex: 1,
             alignItems: "center",
             justifyContent: "center",
+        },
+        imgInternalCont: {
+            shadowColor: "#000",
+            shadowOpacity: 0.3,
+            shadowRadius: 3,
+            shadowOffset: { width: 0, height: 3 },
+            elevation: 5, // Android
+            backgroundColor: "white", // Add this line
+            borderRadius: 30, // Add this line
         },
         image: {
             borderRadius: 30,
@@ -112,14 +129,16 @@ export default function LoginScreen({ navigation }) {
             ) : (
                 <View style={styles.container}>
                     <View style={styles.imageContainer}>
-                        <Image
-                            source={
-                                user.image[3]["#text"]
-                                    ? { uri: user.image[3]["#text"] }
-                                    : require("../../../assets/images/logo.jpg")
-                            }
-                            style={styles.image}
-                        />
+                        <View style={styles.imgInternalCont}>
+                            <Image
+                                source={
+                                    user.image[3]["#text"]
+                                        ? { uri: user.image[3]["#text"] }
+                                        : require("../../../assets/images/logo.jpg")
+                                }
+                                style={styles.image}
+                            />
+                        </View>
                         <Title>{user.realname || user.name}</Title>
                         <View style={{ flex: 1, display: "flex" }}>
                             <Text>{user.country}</Text>
@@ -131,18 +150,34 @@ export default function LoginScreen({ navigation }) {
                                 Ultimas Diez Canciones
                             </List.Subheader>
                             <ScrollView>
-                                {recentsTracks.track?.map((v, k) => (
-                                    <List.Item
-                                        title={v.name}
-                                        description={`${v.artist["#text"]} - ${v.album["#text"]}`}
-                                        left={() => (
-                                            <List.Icon
-                                                color={theme.colors.primary}
-                                                icon="music"
-                                            />
-                                        )}
-                                    />
-                                ))}
+                                {recentsTracks.track.length > 0 ? (
+                                    recentsTracks.track?.map((v, k) => (
+                                        <List.Item
+                                            key={k}
+                                            title={v.name}
+                                            description={`${v.artist["#text"]} - ${v.album["#text"]}`}
+                                            left={() => (
+                                                <List.Image
+                                                    source={{
+                                                        uri: v.image[1][
+                                                            "#text"
+                                                        ],
+                                                    }}
+                                                    style={{
+                                                        width: 50,
+                                                        height: 50,
+                                                        borderRadius: 5,
+                                                    }}
+                                                />
+                                            )}
+                                        />
+                                    ))
+                                ) : (
+                                    <Text>
+                                        El usuario no ha agregado nada a su
+                                        lista de favoritos aún
+                                    </Text>
+                                )}
                             </ScrollView>
                         </List.Section>
                     </View>
