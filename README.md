@@ -6,8 +6,9 @@ Aplicacion de prueba para conocer el top canciones en tu país.
 
 1. Clona el repositorio de GitHub en tu máquina local:
 
+```
 git clone [<URL_del_repositorio>](https://github.com/rojo95/MyMusicApp.git)
-
+```
 
 2. Ve al directorio de la aplicación:
 
