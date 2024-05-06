@@ -5,6 +5,7 @@ import {
     Image,
     useWindowDimensions,
     BackHandler,
+    Alert,
 } from "react-native";
 import { Text, TextInput, Button, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -19,7 +20,7 @@ export default function LoginScreen({ navigation }) {
         password: "",
         showPass: false,
     });
-
+    const [loading, setLoading] = useState(false);
     const { width, height } = useWindowDimensions();
 
     function handleData({ name, value }) {
@@ -27,16 +28,28 @@ export default function LoginScreen({ navigation }) {
     }
 
     async function onLoginPress() {
+        if (loading) return;
+        setLoading(true);
         const { username, password } = states;
 
         if (!username || !password)
             return alert("Debe llenar los campos de manera correcta");
 
         const { session } = await getMobileSession({ username, password });
+        console.log(session);
+
+        if (!session) {
+            setLoading(false);
+            return Alert.alert(
+                "No ha podido iniciar sesion verifique sus credenciales."
+            );
+        }
+
         await AsyncStorage.setItem(sessionNames.user, session.name);
         await AsyncStorage.setItem(sessionNames.key, session.key);
 
         navigation.navigate("Home");
+        setLoading(false);
         return setStates({
             username: "",
             password: "",

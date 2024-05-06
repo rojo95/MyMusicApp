@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     Linking,
     Alert,
+    useWindowDimensions,
 } from "react-native";
 import {
     List,
@@ -26,6 +27,7 @@ import {
     milisegundosToMinutesAndHours,
 } from "../../utils/calculos";
 import sessionNames from "../../utils/sessionInfo";
+import { encodeFormData, generateApiSig } from "../../utils/functions";
 
 function PlaylistScreen({ route }) {
     const theme = useTheme();
@@ -35,7 +37,9 @@ function PlaylistScreen({ route }) {
     const [expanded, setExpanded] = React.useState(false);
     const { apiKey, apiUrl } = Constants.expoConfig.extra;
     const [loved, setLoved] = useState(false);
-    const fabs = sessionNames.fabs;
+    const [wait, setWait] = useState(false);
+    const fabsKey = sessionNames.fabs;
+    const { width, height } = useWindowDimensions();
 
     const styles = StyleSheet.create({
         tags: {
@@ -57,10 +61,11 @@ function PlaylistScreen({ route }) {
             width: "100%",
         },
         imageBackground: {
-            // backgroundColor: "rgba(0, 0, 0, 0.5)",
-            height: 260,
+            height: width < height ? 260 : 150,
+            borderRadius: 0,
             justifyContent: "center",
             alignItems: "center",
+            marginBottom: 20,
         },
         overlay: {
             ...StyleSheet.absoluteFillObject, // para ocupar todo el espacio del ImageBackground
@@ -88,41 +93,91 @@ function PlaylistScreen({ route }) {
         dropdown: {},
     });
 
-    async function addFab() {
+    async function getFabs() {
+        const user = await AsyncStorage.getItem(sessionNames.user);
+        const url = `https://ws.audioscrobbler.com/2.0/?method=user.getlovedtracks&user=${user}&api_key=${apiKey}&format=json`;
         try {
-            const songData = {
-                name: song.name,
-                artistName: song.artist?.name,
-                time: milisegundosToMinutesAndHours(song.duration),
-                mbid: id,
+            const fabs = await fetch(url);
+            if (!fabs.ok) {
+                throw new Error("La solicitud no pudo ser completada");
+            }
+            const data = await fabs.json();
+            const tracks = data?.lovedtracks?.track;
+            const exists = tracks?.find(
+                (v) =>
+                    v.mbid === id ||
+                    (v.name === song?.name &&
+                        v.artist.name === song?.artist?.name)
+            );
+
+            setLoved(exists ? true : false);
+            console.log(tracks);
+        } catch (error) {
+            alert("Error realizando la consulta de usuario");
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function addFab() {
+        if (wait) return;
+        setWait(true);
+        try {
+            const method = `track.${loved ? "un" : ""}love`;
+            const sk = await AsyncStorage.getItem(sessionNames.key);
+            const apiSig = await generateApiSig({
+                api_key: apiKey,
+                artist: song.artist?.name,
+                method: method,
+                sk: sk,
+                track: song.name,
+            }).catch((err) => {
+                throw err;
+            });
+            const formData = {
+                artist: song.artist?.name,
+                api_key: apiKey,
+                method: method,
+                sk: sk,
+                track: song.name,
+                api_sig: apiSig,
+                format: "json",
             };
 
-            const storedValue = await AsyncStorage.getItem(fabs);
-            const parsedValue = JSON.parse(storedValue) || [];
-
-            const exists = parsedValue.find((v) => v.mbid === id);
-            // console.log(exists);
-            setLoved(!exists);
-
-            const newValue = exists
-                ? parsedValue.filter((v) => v.mbid !== id)
-                : [...parsedValue, songData];
-
-            await AsyncStorage.setItem(fabs, JSON.stringify(newValue));
-            Alert.alert(
-                `Se ha ${!exists ? "agregado a" : "retirado de los"} favoritos.`
-            );
+            const encodedData = await encodeFormData(formData);
+            await fetch(apiUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: encodedData,
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    setLoved(!loved);
+                    Alert.alert(
+                        `Se ha ${
+                            !loved ? "agregado a" : "retirado de los"
+                        } favoritos.`
+                    );
+                    return;
+                })
+                .catch((error) => {
+                    console.error("Error:", error);
+                    return error;
+                })
+                .finally(() => setWait(false));
         } catch (error) {
-            throw new Error(`Error storing data: ${error.message}`);
+            console.log(error);
+            Alert.alert(`Error gestionando los favoritos.`);
         }
     }
 
     async function getSong() {
         setLoading(true);
-        const liked = JSON.parse(await AsyncStorage.getItem(fabs)).find(
+        const liked = JSON.parse(await AsyncStorage.getItem(fabsKey))?.find(
             (v) => v.mbid === id
         );
-        // console.log("liked", liked);
         setLoved(liked && true);
         const url = `${apiUrl}?method=track.getInfo&api_key=${apiKey}&mbid=${id}&format=json`;
         await fetch(url)
@@ -145,14 +200,33 @@ function PlaylistScreen({ route }) {
             .finally(() => setLoading(false));
     }
 
+    const execute = async () => {
+        await getSong();
+        await getFabs();
+    };
+
     useEffect(() => {
-        getSong();
+        execute();
+    }, [id]);
+
+    useEffect(() => {
+        execute();
         return () => {
+            setLoved(false);
             setSong(null);
             setLoading(true);
             setLoading(false);
         };
-    }, [id]);
+    }, []);
+
+    useEffect(() => {
+        if (loved) {
+            setLoved(true);
+        } else {
+            setLoved(false);
+        }
+    }, [song]);
+
     return (
         <ScrollView
             style={{
@@ -193,8 +267,7 @@ function PlaylistScreen({ route }) {
                             <Paragraph>
                                 {formatNumber(song.playcount)} de reproducciones
                             </Paragraph>
-                            <Text>Tags:</Text>
-
+                            <Text style={{ marginBottom: 5 }}>Tags:</Text>
                             <Text>
                                 {song.toptags?.tag?.map((i, k) => (
                                     <TouchableOpacity

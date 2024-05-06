@@ -56,11 +56,13 @@ export default function LoginScreen({ navigation }) {
         } finally {
             setLoading(false);
         }
+        setLoading(true);
     }
 
     function getLast() {
         setLoading(true);
         const url = `${apiUrl}?method=user.getrecenttracks&user=${userName}&api_key=${apiKey}&format=json&limit=10&page=1`;
+        console.log(url);
         fetch(url)
             .then((response) => {
                 if (!response.ok) {
@@ -69,12 +71,28 @@ export default function LoginScreen({ navigation }) {
                 return response.json();
             })
             .then((res) => {
-                setRecentsTraks(res.recenttracks);
+                const tracks = res.recenttracks.track;
+
+                // Verificar si tracks es nulo o indefinido
+                if (tracks === null || typeof tracks === "undefined") {
+                    // Si es nulo o indefinido, asignar un arreglo vacío
+                    setRecentsTraks([]);
+                    console.log([]);
+                } else if (Array.isArray(tracks)) {
+                    // Si es un arreglo, agregarlo directamente
+                    setRecentsTraks(tracks);
+                    console.log(tracks);
+                } else {
+                    // Si es un objeto, ponerlo dentro de un arreglo
+                    setRecentsTraks([tracks]);
+                    console.log([tracks]);
+                }
             })
             .catch((error) => {
                 alert("Error realizando la consulta");
             })
             .finally(() => setLoading(false));
+        setLoading(true);
     }
 
     const styles = StyleSheet.create({
@@ -120,66 +138,67 @@ export default function LoginScreen({ navigation }) {
     });
 
     return (
-        <SafeAreaView style={styles.container}>
-            {loading || !user ? (
-                <Spinner activate={loading} />
-            ) : (
-                <View style={styles.container}>
-                    <View style={styles.imageContainer}>
-                        <View style={styles.imgInternalCont}>
-                            <Image
-                                source={
-                                    user.image[3]["#text"]
-                                        ? { uri: user.image[3]["#text"] }
-                                        : require("../../../assets/images/logo.jpg")
-                                }
-                                style={styles.image}
-                            />
-                        </View>
-                        <Title>{user.realname || user.name}</Title>
-                        <View style={{ flex: 1, display: "flex" }}>
-                            <Text>{user.country}</Text>
-                        </View>
+        <View style={styles.container}>
+            {user && ( // Verifica si user no es nulo
+                <View style={styles.imageContainer}>
+                    <View style={styles.imgInternalCont}>
+                        <Image
+                            source={
+                                user.image &&
+                                user.image[3] &&
+                                user.image[3]["#text"]
+                                    ? { uri: user.image[3]["#text"] }
+                                    : require("../../../assets/images/logo.jpg")
+                            }
+                            style={styles.image}
+                        />
                     </View>
-                    <View style={styles.formContainer}>
-                        <List.Section>
-                            <List.Subheader>
-                                Ultimas Diez Canciones
-                            </List.Subheader>
-                            <ScrollView>
-                                {recentsTracks?.track.length > 0 ? (
-                                    recentsTracks?.track?.map((v, k) => (
-                                        <List.Item
-                                            key={k}
-                                            title={v.name}
-                                            description={`${v.artist["#text"]} - ${v.album["#text"]}`}
-                                            left={() => (
-                                                <List.Image
-                                                    source={{
-                                                        uri: v.image[1][
-                                                            "#text"
-                                                        ],
-                                                    }}
-                                                    style={{
-                                                        width: 50,
-                                                        height: 50,
-                                                        borderRadius: 5,
-                                                    }}
-                                                />
-                                            )}
-                                        />
-                                    ))
-                                ) : (
-                                    <Text>
-                                        El usuario no ha agregado nada a su
-                                        lista de favoritos aún
-                                    </Text>
-                                )}
-                            </ScrollView>
-                        </List.Section>
+                    <Title>{user.realname || user.name}</Title>
+                    <View style={{ display: "flex" }}>
+                        <Text>{user.country}</Text>
                     </View>
                 </View>
             )}
-        </SafeAreaView>
+            <View style={styles.formContainer}>
+                <List.Section>
+                    <List.Subheader>Últimas Diez Canciones</List.Subheader>
+                    <ScrollView style={{ width: width }}>
+                        {recentsTracks?.length > 0 ? (
+                            recentsTracks?.map((v, k) => (
+                                <List.Item
+                                    key={k}
+                                    title={v.name}
+                                    description={`${v.artist["#text"]} - ${v.album["#text"]}`}
+                                    left={() => (
+                                        <List.Image
+                                            source={
+                                                v.image &&
+                                                v.image[1] &&
+                                                v.image[1]["#text"]
+                                                    ? {
+                                                          uri: v.image[1][
+                                                              "#text"
+                                                          ],
+                                                      }
+                                                    : require("../../../assets/images/logo.jpg")
+                                            }
+                                            style={{
+                                                width: 50,
+                                                height: 50,
+                                                borderRadius: 5,
+                                            }}
+                                        />
+                                    )}
+                                />
+                            ))
+                        ) : (
+                            <Text>
+                                El usuario aún no reproduce ninguna canción.
+                            </Text>
+                        )}
+                    </ScrollView>
+                </List.Section>
+            </View>
+        </View>
     );
 }

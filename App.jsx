@@ -97,7 +97,7 @@ const Routes = [
                 shadowOpacity: 0,
                 elevation: 0,
             },
-            headerTintColor: "#fff",
+            headerTintColor: theme.colors.primaryContrast,
             headerTitleStyle: {
                 fontWeight: "bold",
             },
@@ -119,9 +119,9 @@ const Routes = [
         options: (navigation) => ({
             title: "Detalles de Canción",
             headerStyle: {
-                backgroundColor: "#6b65c7",
+                backgroundColor: theme.colors.primary,
             },
-            headerTintColor: "#fff",
+            headerTintColor: theme.colors.primaryContrast,
             headerTitleStyle: {
                 fontWeight: "bold",
             },
@@ -146,13 +146,23 @@ const Routes = [
         options: (navigation) => ({
             title: "Mi Perfil",
             headerStyle: {
-                backgroundColor: "#6b65c7",
+                backgroundColor: "transparent",
+                elevation: 0,
             },
-            headerTintColor: "#fff",
+            headerTintColor: theme.colors.primary,
             headerTitleStyle: {
                 fontWeight: "bold",
             },
             drawerIcon: () => <IconButton icon="account" />,
+            headerRight: () => (
+                <IconButton
+                    icon="arrow-left"
+                    onPress={() => {
+                        navigation.goBack();
+                    }}
+                    iconColor={theme.colors.primary}
+                />
+            ),
         }),
     },
     {
@@ -161,9 +171,9 @@ const Routes = [
         options: (navigation) => ({
             title: "Iniciar Sesión",
             headerStyle: {
-                backgroundColor: "#6b65c7",
+                backgroundColor: theme.colors.primary,
             },
-            headerTintColor: "#fff",
+            headerTintColor: theme.colors.primaryContrast,
             headerTitleStyle: {
                 fontWeight: "bold",
             },

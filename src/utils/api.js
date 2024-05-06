@@ -33,18 +33,6 @@ async function generateApiSig(params) {
     return await generateHash(signatureString);
 }
 
-function createUrl(params) {
-    const urlBase = apiUrl;
-    return (
-        urlBase +
-        "?" +
-        Object.keys(params)
-            .sort()
-            .map((key) => `${key}=${params[key]}`)
-            .join("&")
-    );
-}
-
 async function getMobileSession({ username, password }) {
     const usr = username.trim();
     const pass = password.trim();
