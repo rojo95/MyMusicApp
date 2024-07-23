@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "14d226fc-fc23-4f31-966a-7f135fbab507"
+      }
+    },
+    "android": {
+      "package": "com.rojo95.mymusicapp"
+    }
+  }
+}

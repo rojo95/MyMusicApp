@@ -1,22 +1,18 @@
 {
-    "cli": {
-        "version": ">= 10.1.0",
-        "requireCommit": true
+  "cli": {
+    "version": ">= 10.1.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
     },
-    "build": {
-        "development": {
-            "developmentClient": true,
-            "distribution": "internal",
-            "ios": {
-                "simulator": true
-            }
-        },
-        "preview": {
-            "distribution": "internal"
-        },
-        "production": {}
+    "preview": {
+      "distribution": "internal"
     },
-    "submit": {
-        "production": {}
-    }
+    "production": {}
+  },
+  "submit": {
+    "production": {}
+  }
 }
