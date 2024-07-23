@@ -24,7 +24,7 @@ export default ({ config }) => ({
     ...config,
     expo: {
         name: getAppName(),
-        slug: "music-app",
+        slug: "mymusicapp",
         extra: {
             eas: {
                 projectId: "14d226fc-fc23-4f31-966a-7f135fbab507",
