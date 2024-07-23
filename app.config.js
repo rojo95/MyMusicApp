@@ -29,9 +29,6 @@ export default ({ config }) => ({
             eas: {
                 projectId: "14d226fc-fc23-4f31-966a-7f135fbab507",
             },
-            apiKey: process.env.LAST_FM_API_KEY,
-            apiSecretKey: process.env.LAST_FM_API_SECRET_KEY,
-            apiUrl: process.env.API_LAST_FM,
         },
         android: {
             package: "com.rojo95.mymusicapp",
